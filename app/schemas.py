@@ -6,7 +6,7 @@
 
 # typing 모듈에서 List 타입을 가져옵니다.
 # List는 여러 개의 데이터를 담는 리스트 자료형의 내부 타입을 명확히 표현할 때 사용합니다.
-from typing import List
+from typing import List, Optional
 
 # pydantic의 BaseModel과 Field를 가져옵니다.
 # BaseModel은 데이터 검증 모델의 기본 클래스입니다.
@@ -51,6 +51,47 @@ class ChatRequest(BaseModel):
     history: List[ChatMessage] = Field(
         default_factory=list,
         description="이전 대화 내역",
+    )
+
+    # system_instruction은 챗봇의 역할과 답변 스타일을 지정하는 시스템 메시지입니다.
+    # 값이 없으면 서비스 기본값을 사용합니다.
+    system_instruction: Optional[str] = Field(
+        default=None,
+        description="챗봇 역할 지시문 (System Instruction)",
+        examples=["너는 한국어로 친절하게 답변하는 AI 어시스턴트야."],
+    )
+
+    # 호출할 OpenAI 모델명입니다. 없으면 서버 환경 변수 기본값을 사용합니다.
+    model: Optional[str] = Field(
+        default=None,
+        description="사용할 OpenAI 모델명",
+        examples=["gpt-4o-mini", "gpt-4o", "o4-mini"],
+    )
+
+    # temperature는 답변의 창의성 정도입니다. o계열·gpt-5 모델은 지원하지 않습니다.
+    temperature: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=2.0,
+        description="응답 다양성 (0~2). o계열/gpt-5 모델은 자동으로 무시됩니다.",
+        examples=[0.7],
+    )
+
+    # top_p는 nucleus sampling 값입니다. temperature와 동시에 조정하는 것은 권장하지 않습니다.
+    top_p: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Nucleus sampling 값 (0~1)",
+        examples=[1.0],
+    )
+
+    # max_output_tokens는 응답 최대 토큰 수입니다.
+    max_output_tokens: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description="응답 최대 토큰 수",
+        examples=[1024],
     )
 
 

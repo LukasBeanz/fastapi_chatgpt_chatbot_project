@@ -6,112 +6,134 @@
 
 // 챗봇 열기 버튼 요소를 가져옵니다.
 const chatIcon = document.getElementById("chatIcon");
-
-// 챗봇 모달 요소를 가져옵니다.
 const chatModal = document.getElementById("chatModal");
-
-// 챗봇 닫기 버튼 요소를 가져옵니다.
 const closeChat = document.getElementById("closeChat");
-
-// 메시지 목록이 표시될 영역을 가져옵니다.
 const chatMessages = document.getElementById("chatMessages");
-
-// 메시지 입력 폼 요소를 가져옵니다.
 const chatForm = document.getElementById("chatForm");
-
-// 사용자가 질문을 입력하는 input 요소를 가져옵니다.
 const messageInput = document.getElementById("messageInput");
 
+// 설정 패널 관련 요소를 가져옵니다.
+const toggleSettings = document.getElementById("toggleSettings");
+const clearHistory = document.getElementById("clearHistory");
+const settingsPanel = document.getElementById("settingsPanel");
+const systemInstruction = document.getElementById("systemInstruction");
+const modelSelect = document.getElementById("modelSelect");
+const temperatureInput = document.getElementById("temperatureInput");
+const topPInput = document.getElementById("topPInput");
+const maxTokensInput = document.getElementById("maxTokensInput");
+const tempWarning = document.getElementById("tempWarning");
+
+// temperature를 지원하지 않는 모델 접두사 목록입니다.
+// 서버와 동일한 규칙을 프론트에서도 유지하여 즉시 경고를 표시합니다.
+const NO_TEMPERATURE_PREFIXES = ["o1", "o2", "o3", "o4", "o5", "gpt-5"];
+
 // 이전 대화 내역을 저장하는 배열입니다.
-// 서버에 함께 전달하면 문맥을 이어서 답변할 수 있습니다.
 const history = [];
 
-// 챗봇 버튼을 클릭하면 모달의 hidden 클래스를 제거하여 화면에 표시합니다.
+// 선택한 모델이 temperature를 지원하는지 확인하는 함수입니다.
+function supportsTemperature(modelName) {
+    if (!modelName) return true;
+    const lower = modelName.toLowerCase();
+    return !NO_TEMPERATURE_PREFIXES.some((prefix) => lower.startsWith(prefix));
+}
+
+// 모델 선택이 바뀔 때 temperature 입력창 활성화 여부와 경고를 갱신합니다.
+modelSelect.addEventListener("change", () => {
+    const ok = supportsTemperature(modelSelect.value);
+    temperatureInput.disabled = !ok;
+    tempWarning.classList.toggle("hidden", ok);
+    if (!ok) temperatureInput.value = "";
+});
+
+// 설정 버튼 클릭 시 설정 패널을 열고 닫습니다.
+toggleSettings.addEventListener("click", () => {
+    settingsPanel.classList.toggle("hidden");
+});
+
+// 대화 초기화 버튼 클릭 시 화면과 내역을 모두 지웁니다.
+clearHistory.addEventListener("click", () => {
+    history.length = 0;
+    chatMessages.innerHTML = "";
+});
+
+// 챗봇 버튼을 클릭하면 모달을 표시합니다.
 chatIcon.addEventListener("click", () => {
     chatModal.classList.remove("hidden");
     messageInput.focus();
 });
 
-// 닫기 버튼을 클릭하면 모달에 hidden 클래스를 추가하여 화면에서 숨깁니다.
+// 닫기 버튼을 클릭하면 모달을 숨깁니다.
 closeChat.addEventListener("click", () => {
     chatModal.classList.add("hidden");
 });
 
 // 화면에 메시지 말풍선을 추가하는 함수입니다.
 function addMessage(role, content) {
-    // div 요소를 새로 생성합니다.
     const messageElement = document.createElement("div");
-
-    // role에 따라 user 또는 assistant 스타일이 적용되도록 클래스를 지정합니다.
     messageElement.className = `message ${role}`;
-
-    // textContent를 사용하여 사용자가 입력한 HTML이 실행되지 않도록 안전하게 출력합니다.
+    // textContent를 사용하여 XSS를 방지합니다.
     messageElement.textContent = content;
-
-    // 생성한 메시지 요소를 메시지 목록 영역에 추가합니다.
     chatMessages.appendChild(messageElement);
-
-    // 새 메시지가 추가되면 스크롤을 가장 아래로 이동합니다.
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    return messageElement;
+}
+
+// 설정 패널에서 현재 값을 읽어 API 요청 바디를 구성하는 함수입니다.
+function buildRequestBody(message) {
+    const body = {
+        message,
+        history: history.slice(0, -1),
+    };
+
+    const instruction = systemInstruction.value.trim();
+    if (instruction) body.system_instruction = instruction;
+
+    const model = modelSelect.value;
+    if (model) body.model = model;
+
+    // temperature는 모델이 지원할 때만 포함합니다.
+    if (supportsTemperature(model)) {
+        const temp = temperatureInput.value.trim();
+        if (temp !== "") body.temperature = parseFloat(temp);
+    }
+
+    const topP = topPInput.value.trim();
+    if (topP !== "") body.top_p = parseFloat(topP);
+
+    const maxTokens = maxTokensInput.value.trim();
+    if (maxTokens !== "") body.max_output_tokens = parseInt(maxTokens, 10);
+
+    return body;
 }
 
 // 메시지 전송 폼이 제출될 때 실행되는 이벤트입니다.
 chatForm.addEventListener("submit", async (event) => {
-    // form의 기본 동작인 페이지 새로고침을 막습니다.
     event.preventDefault();
 
-    // 입력값 앞뒤 공백을 제거합니다.
     const message = messageInput.value.trim();
+    if (!message) return;
 
-    // 빈 문자열이면 서버로 전송하지 않습니다.
-    if (!message) {
-        return;
-    }
-
-    // 사용자 메시지를 화면에 먼저 출력합니다.
     addMessage("user", message);
-
-    // 대화 기록에도 사용자 메시지를 저장합니다.
     history.push({ role: "user", content: message });
-
-    // 입력창을 비워 다음 질문을 입력할 수 있게 합니다.
     messageInput.value = "";
 
-    // 응답 대기 중임을 사용자에게 알려줍니다.
-    addMessage("assistant", "답변을 생성하는 중입니다...");
+    const loadingMessage = addMessage("assistant", "답변을 생성하는 중입니다...");
 
-    // 방금 추가한 대기 메시지 요소를 기억합니다.
-    const loadingMessage = chatMessages.lastElementChild;
-
-    // try 블록에서 서버 API를 호출합니다.
     try {
-        // FastAPI의 /api/chat 엔드포인트에 POST 요청을 보냅니다.
         const response = await fetch("/api/chat", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                message: message,
-                history: history.slice(0, -1),
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildRequestBody(message)),
         });
 
-        // HTTP 응답이 실패 상태이면 오류를 발생시킵니다.
         if (!response.ok) {
             throw new Error(`서버 오류: ${response.status}`);
         }
 
-        // 서버에서 받은 JSON 응답을 파싱합니다.
         const data = await response.json();
-
-        // 대기 메시지 내용을 실제 답변으로 교체합니다.
         loadingMessage.textContent = data.reply;
-
-        // 대화 기록에도 챗봇 답변을 저장합니다.
         history.push({ role: "assistant", content: data.reply });
     } catch (error) {
-        // 오류가 발생하면 화면에 오류 안내를 표시합니다.
         loadingMessage.textContent = `오류가 발생했습니다. ${error.message}`;
     }
 });
