@@ -21,7 +21,7 @@
 - 이전 대화 기록을 포함한 문맥 유지
 - System Instruction 설정 가능
 - model, temperature, top_p, max_output_tokens 설정 가능
-
+- gpt-5/o 계열 모델의 temperature 미지원 오류 자동 회피
 
 ## 2. 프로젝트 구조
 
