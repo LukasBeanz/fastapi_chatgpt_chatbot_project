@@ -1,0 +1,58 @@
+<!-- app/static/index.html -->
+<!-- ------------------------------------------------------------ -->
+<!-- FastAPI가 제공하는 챗봇 화면입니다. -->
+<!-- 제공된 React 예제의 floating chatbot UI를 순수 HTML/CSS/JS 구조로 다시 구현했습니다. -->
+<!-- ------------------------------------------------------------ -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- 브라우저가 한글을 정상 표시하도록 UTF-8 문자셋을 지정합니다. -->
+    <meta charset="UTF-8" />
+
+    <!-- 모바일 화면에서도 레이아웃이 화면 너비에 맞게 표시되도록 설정합니다. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- 브라우저 탭에 표시될 제목입니다. -->
+    <title>FastAPI ChatGPT ChatBot</title>
+
+    <!-- 별도로 작성한 CSS 파일을 연결합니다. -->
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <!-- 전체 페이지의 메인 영역입니다. -->
+    <main class="page">
+        <!-- 프로젝트 제목과 설명을 표시하는 영역입니다. -->
+        <section class="hero">
+            <h1>FastAPI ChatGPT 챗봇 앱</h1>
+            <p>오른쪽 아래 챗봇 버튼을 눌러 질문을 입력하세요.</p>
+            <p class="notice">API 키가 없으면 데모 모드로 동작하고, API 키를 설정하면 실제 ChatGPT 응답을 받습니다.</p>
+        </section>
+    </main>
+
+    <!-- 오른쪽 아래에 고정되는 챗봇 열기 버튼입니다. -->
+    <button id="chatIcon" class="chat-icon" type="button" aria-label="챗봇 열기">
+        💬
+    </button>
+
+    <!-- 챗봇 모달 창 전체를 감싸는 영역입니다. hidden 클래스가 있으면 보이지 않습니다. -->
+    <section id="chatModal" class="chat-modal hidden" aria-label="챗봇 대화창">
+        <!-- 챗봇 모달의 상단 제목 영역입니다. -->
+        <header class="chat-header">
+            <strong>ChatGPT ChatBot</strong>
+            <button id="closeChat" class="close-button" type="button" aria-label="챗봇 닫기">×</button>
+        </header>
+
+        <!-- 대화 메시지가 계속 추가되는 영역입니다. -->
+        <div id="chatMessages" class="chat-messages"></div>
+
+        <!-- 사용자 입력 폼입니다. Enter 또는 전송 버튼으로 메시지를 보냅니다. -->
+        <form id="chatForm" class="chat-form">
+            <input id="messageInput" class="chat-input" type="text" placeholder="질문을 입력하세요." autocomplete="off" />
+            <button class="send-button" type="submit">전송</button>
+        </form>
+    </section>
+
+    <!-- 챗봇 동작을 담당하는 JavaScript 파일을 연결합니다. -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
